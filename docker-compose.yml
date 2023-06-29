@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  guardian-service:
+    container_name: price-detection-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 12002:5000
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Shanghai
+
