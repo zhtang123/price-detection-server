@@ -6,9 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - 12002:5000
+      - 0.0.0.0:12002:12002
     env_file:
       - .env
     environment:
       - TZ=Asia/Shanghai
-
