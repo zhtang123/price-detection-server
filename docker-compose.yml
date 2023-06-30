@@ -1,8 +1,7 @@
 version: '3'
 
 services:
-  guardian-service:
-    container_name: price-detection-service
+  price-detection-service:
     build:
       context: .
       dockerfile: Dockerfile
