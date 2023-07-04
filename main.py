@@ -1,14 +1,18 @@
 import os
 import time
 import requests
+import logging
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
+app.url_map.strict_slashes = False
+
 
 BASE_URL = "https://api.binance.com"
 
+standard_token="USDT"
 price_cache = {}
-price_cache["USDT"] = {"price": 1, "priceChangePercent": 0, "success": True}
+price_cache[standard_token] = {"price": 1, "priceChangePercent": 0, "success": True}
 
 last_sync_timestamps = {}
 
@@ -20,9 +24,10 @@ def binance_api_request(endpoint, params=None):
     return response.json()
 
 def sync_token_price_data(symbols):
+    logging.info(f"query_binance: {symbols}")
     global last_sync_timestamps, price_cache
 
-    symbols = [str(symbol)+"USDT" for symbol in symbols]
+    symbols = [str(symbol)+standard_token for symbol in symbols]
 
     response = binance_api_request("/api/v3/ticker/24hr", params={"symbols": str(symbols).replace("'", '"').replace(' ', '')})
 
@@ -30,7 +35,7 @@ def sync_token_price_data(symbols):
         return response
 
     for item in response:
-        symbol = str(item["symbol"]).replace('USDT', '')
+        symbol = str(item["symbol"]).replace(standard_token, '')
         price = float(item["lastPrice"])
         price_change_percent = float(item["priceChangePercent"])
         price_cache[symbol] = {"price": price, "priceChangePercent": price_change_percent, "success": True}
@@ -48,10 +53,13 @@ def get_token_price_change(tokens):
     query_list=[]
 
     for token in tokens:
+        if token == standard_token:
+            continue
+
         last_sync_timestamp = last_sync_timestamps.get(token)
 
         if last_sync_timestamp is None:
-            error = sync_token_price_data([token])
+            sync_token_price_data([token])
         elif (current_timestamp - last_sync_timestamp) > sync_interval:
             query_list.append(token)
 
@@ -75,9 +83,8 @@ def api():
     if "tokens" not in data:
         return jsonify({"code": 400, "message": "Tokens parameter is missing.", "data": [], "success": False}), 400
 
-    print(data["tokens"])
-
     tokens = data["tokens"]
+    logging.info(tokens)
     result_data, error = get_token_price_change(tokens)
 
     if error:
